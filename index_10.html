@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Chinese Power — 8 Pronoun Words</title>
+<style>
+:root{
+  --bg1:#3a0d18; --bg2:#7a1220; --bg3:#2a0a12;
+  --card:#ffffff; --ink:#231a1a; --muted:#7a7280;
+  --accent:#ffb400; --accent2:#ffe066;
+  --good:#22c58b; --bad:#ff5d73; --blue:#4d8bff; --purple:#9b6bff;
+  --shadow:0 8px 0 rgba(0,0,0,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  background:linear-gradient(160deg,var(--bg1),var(--bg2) 45%,var(--bg3));
+  background-attachment:fixed;color:var(--ink);
+  overflow-x:hidden;overscroll-behavior:none;
+}
+#app{max-width:640px;margin:0 auto;padding:8px 12px 90px;min-height:100vh}
+
+/* Chinese characters get their own font stack so they never fall back to a
+   European font with missing glyphs (boxes). All of these ship with the OS. */
+.han,.tok.han,.opt.han{
+  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans SC','Noto Sans CJK SC',
+              'Source Han Sans SC','Microsoft YaHei','Heiti SC','SimHei',sans-serif;
+}
+.py{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;letter-spacing:.5px}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;padding:8px 0;backdrop-filter:blur(6px)}
+.tbtn{
+  border:none;border-radius:14px;padding:10px 12px;font-size:18px;font-weight:800;
+  background:rgba(255,255,255,.16);color:#fff;cursor:pointer;line-height:1;
+  min-width:46px;min-height:46px;display:flex;align-items:center;justify-content:center;
+}
+.tbtn:active{transform:scale(.94)}
+.pill{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  background:rgba(255,255,255,.14);color:#fff;border-radius:14px;
+  padding:10px 8px;font-weight:800;font-size:15px;min-height:46px;
+}
+.pill .sc{color:var(--accent2)}
+.hide{display:none !important}
+
+/* ---------- menu ---------- */
+.hero{text-align:center;color:#fff;padding:14px 6px 6px}
+.hero h1{
+  margin:0;font-size:30px;letter-spacing:.5px;
+  background:linear-gradient(90deg,#ffe066,#ffb400,#ff5d73,#9b6bff,#4d8bff);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{margin:6px 0 0;opacity:.8;font-size:14px}
+.wordstrip{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0 6px}
+.wchip{
+  background:rgba(255,255,255,.13);color:#fff;border-radius:999px;
+  padding:7px 12px;font-size:14px;font-weight:700;border:none;cursor:pointer;min-height:40px;
+}
+.wchip b{font-size:18px;margin-right:4px}
+.wchip:active{transform:scale(.93);background:rgba(255,255,255,.3)}
+
+.grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+@media(min-width:520px){.grid{grid-template-columns:1fr 1fr}}
+.lvl{
+  display:flex;align-items:center;gap:12px;background:var(--card);
+  border-radius:18px;padding:13px 14px;border:none;text-align:left;
+  cursor:pointer;box-shadow:var(--shadow);width:100%;
+}
+.lvl:active{transform:translateY(3px);box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.lvl .ic{font-size:26px;width:50px;height:50px;flex:0 0 50px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#fdf0f2}
+.lvl .tx{flex:1;min-width:0;display:block}
+.lvl .tt{display:block;font-weight:800;font-size:15px;line-height:1.25}
+.lvl .ss{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.3}
+.lvl .st{font-size:20px;flex:0 0 auto}
+.lvl.done{background:#e9fbf4}
+.lvl.done .ic{background:#c9f3e2}
+.lvl.study{background:linear-gradient(135deg,#fff6d8,#ffe9b0)}
+.notice{
+  background:rgba(255,255,255,.14);color:#fff;border-radius:14px;padding:11px 13px;
+  font-size:12.5px;line-height:1.45;margin-top:14px;
+}
+.notice b{color:var(--accent2)}
+
+/* ---------- play area ---------- */
+.card{background:var(--card);border-radius:22px;padding:18px 16px;box-shadow:0 10px 30px rgba(0,0,0,.28);margin-top:10px}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.qnum{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px}
+.bar{height:8px;background:#f6ecef;border-radius:99px;overflow:hidden;margin:8px 0 16px}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0;transition:width .35s}
+.prompt{font-size:17px;font-weight:700;text-align:center;line-height:1.45;margin:4px 0 14px}
+.sub{font-size:13px;color:var(--muted);text-align:center;margin:-6px 0 14px}
+
+.bighan{font-size:78px;line-height:1.15;text-align:center;font-weight:700;margin:2px 0 2px}
+.bigpy{font-size:22px;text-align:center;color:var(--muted);font-weight:700;margin-bottom:10px}
+.bigemo{text-align:center;font-size:60px;line-height:1.2;margin:4px 0 8px}
+
+.playrow{display:flex;gap:10px;justify-content:center;margin:6px 0 16px;flex-wrap:wrap}
+.pbtn{
+  border:none;border-radius:999px;padding:14px 22px;font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;cursor:pointer;
+  box-shadow:0 5px 0 rgba(0,0,0,.2);min-height:52px;
+}
+.pbtn.slow{background:linear-gradient(135deg,#5ad1c0,#2fa3a3);font-size:14px;padding:14px 18px}
+.pbtn:active{transform:translateY(4px);box-shadow:none}
+.pbtn.big{font-size:22px;padding:20px 34px}
+.speaking{animation:pulse .7s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{
+  border:3px solid #f0e7ea;background:#fffbfc;border-radius:18px;padding:14px 8px;
+  cursor:pointer;font-size:40px;line-height:1.1;transition:transform .12s;min-height:96px;
+  display:flex;align-items:center;justify-content:center;color:var(--ink);
+}
+.opt.han{font-size:52px;font-weight:700}
+.opt:active{transform:scale(.95)}
+.opt.right{border-color:var(--good);background:#e7fbf3}
+.opt.wrong{border-color:var(--bad);background:#ffeef1;animation:shake .4s}
+.opts.text{grid-template-columns:1fr}
+.opts.text .opt{font-size:16px;font-weight:700;min-height:auto;padding:15px 14px;text-align:left;justify-content:flex-start}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+.inp{
+  width:100%;border:3px solid #f0e7ea;border-radius:16px;padding:15px 14px;
+  font-size:22px;font-weight:700;text-align:center;outline:none;font-family:inherit;
+  background:#fffbfc;color:var(--ink);
+}
+.inp:focus{border-color:var(--blue)}
+.inp.right{border-color:var(--good);background:#e7fbf3}
+.inp.wrong{border-color:var(--bad);background:#ffeef1;animation:shake .4s}
+
+.cta{
+  width:100%;border:none;border-radius:16px;padding:16px;font-size:17px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),#ff5d73);color:#fff;cursor:pointer;
+  box-shadow:0 5px 0 rgba(0,0,0,.2);margin-top:12px;min-height:54px;
+}
+.cta:active{transform:translateY(4px);box-shadow:none}
+.cta.g{background:linear-gradient(135deg,#2fd08a,#12a06a)}
+.cta.r{background:linear-gradient(135deg,#ff7a8a,#e84a5f)}
+.cta.ghost{background:#f4eff1;color:var(--ink);box-shadow:0 5px 0 #e0d6da}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.fb{margin-top:12px;border-radius:14px;padding:12px;font-weight:800;text-align:center;font-size:15px}
+.fb.ok{background:#e7fbf3;color:#0e8a5f}
+.fb.no{background:#ffeef1;color:#c02c46}
+.fb.tip{background:#fff6d8;color:#8a5b00}
+.fb .ans{display:block;font-weight:800;margin-top:6px;font-size:16px;color:var(--ink)}
+.fb .copy{display:block;font-size:30px;letter-spacing:2px;margin-top:8px;color:#12a06a}
+
+/* sentence building */
+.bank,.line{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.line{min-height:70px;border:3px dashed #ecdfe3;border-radius:16px;padding:10px;background:#fffbfc;align-content:flex-start;margin-bottom:12px}
+.tok{border:none;background:#f4eff1;border-radius:12px;padding:10px 14px;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #e0d6da;color:var(--ink);min-height:48px}
+.tok:active{transform:translateY(2px);box-shadow:none}
+.tok.in{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+
+.model{background:#f2f6ff;border-left:5px solid var(--blue);border-radius:12px;padding:12px 14px;margin-top:12px}
+.model small{display:block;font-weight:700;color:var(--muted);font-size:11px;letter-spacing:1px;margin-bottom:6px}
+.model .zh{font-size:26px;font-weight:700;line-height:1.4}
+.model .pn{font-size:15px;color:#3a4a7a;font-weight:700;margin-top:3px}
+.model .en{font-size:14px;color:var(--muted);font-weight:700;margin-top:3px}
+
+/* ---------- flash cards ---------- */
+.fcwrap{perspective:1400px;margin-top:10px}
+.fcin{position:relative;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .55s;min-height:400px}
+.fcwrap.flip .fcin{transform:rotateY(180deg)}
+.fcf,.fcb{
+  position:absolute;top:0;left:0;width:100%;min-height:400px;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:22px;background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.28);
+  padding:18px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.fcb{transform:rotateY(180deg)}
+.fcf .side,.fcb .side{font-size:11px;letter-spacing:2px;font-weight:800;color:var(--muted);margin-bottom:6px}
+.fctap{font-size:12px;color:var(--muted);margin-top:14px;font-weight:700}
+.fcnav{display:flex;align-items:center;gap:10px;margin-top:14px}
+.fcnav .cta{margin-top:0}
+.fcen{font-size:26px;font-weight:800;text-align:center;margin:2px 0 4px}
+.fcsent{background:#fffdf5;border:2px solid #ffe8b8;border-radius:14px;padding:12px;margin-top:12px;width:100%;text-align:center}
+.fcsent .zh{font-size:27px;font-weight:700;line-height:1.4}
+.fcsent .pn{font-size:15px;color:#8a5b00;font-weight:700;margin-top:4px}
+.fcsent .en{font-size:14px;color:var(--muted);font-weight:700;margin-top:3px}
+
+/* results */
+.result{text-align:center;color:#fff;padding:26px 10px}
+.result .em{font-size:76px;line-height:1;animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.result h2{margin:12px 0 4px;font-size:26px}
+.result p{opacity:.85;margin:0 0 6px}
+.bigscore{font-size:52px;font-weight:900;color:var(--accent2);margin:10px 0}
+.stars{font-size:34px;letter-spacing:4px}
+.brk{background:rgba(255,255,255,.1);border-radius:16px;padding:12px;margin:14px 0;text-align:left}
+.brk div{display:flex;justify-content:space-between;font-size:13px;padding:5px 4px;color:#fff;border-bottom:1px solid rgba(255,255,255,.1)}
+.brk div:last-child{border:none}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
+.cf{position:absolute;width:10px;height:16px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.1}}
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:98;
+  background:rgba(0,0,0,.82);color:#fff;padding:12px 20px;border-radius:99px;
+  font-weight:800;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;
+  max-width:88vw;text-align:center;
+}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="topbar" id="topbar">
+    <button class="tbtn" id="homeBtn" title="Home">🏠</button>
+    <div class="pill"><span id="pillTitle">Chinese Power</span> <span class="sc">⭐ <b id="scoreVal">0</b></span></div>
+    <button class="tbtn" id="repeatBtn" title="Repeat audio">🔁</button>
+  </div>
+  <div id="screen"></div>
+</div>
+<div id="confetti"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ==========  DATA BLOCK — this is the only part to edit  ==========
+   WORDS[]  one entry per target word
+     w  : the Chinese characters
+     py : pinyin with tone marks (typing accepts it without tones)
+     en : English meaning
+     e  : emoji picture. Plural pronouns use a repeated/grouped picture —
+          the same convention in every level, so students learn it.
+     hom: homophone group. Words with the SAME hom sound identical
+          (他 / 她 are both "tā"), so they are never offered together as
+          options in the audio-only levels.
+     s / sp / se : example sentence, its pinyin, its English translation
+     tk : the sentence split into word chunks for the ordering level
+   ============================================================ */
+const WORDS = [
+  {w:"我",   py:"wǒ",    en:"I / me",      e:"🙋",     hom:"wo",
+   s:"我是老师。",   sp:"Wǒ shì lǎoshī.",     se:"I am a teacher.",   tk:["我","是","老师"]},
+  {w:"你",   py:"nǐ",    en:"you",         e:"👉",     hom:"ni",
+   s:"你好吗？",     sp:"Nǐ hǎo ma?",         se:"How are you?",      tk:["你","好","吗"]},
+  {w:"他",   py:"tā",    en:"he / him",    e:"👦",     hom:"ta",
+   s:"他是我朋友。", sp:"Tā shì wǒ péngyou.", se:"He is my friend.",  tk:["他","是","我","朋友"]},
+  {w:"她",   py:"tā",    en:"she / her",   e:"👧",     hom:"ta",
+   s:"她很漂亮。",   sp:"Tā hěn piàoliang.",  se:"She is very pretty.",tk:["她","很","漂亮"]},
+  {w:"我们", py:"wǒmen", en:"we / us",     e:"🙋🙋🙋", hom:"women",
+   s:"我们去学校。", sp:"Wǒmen qù xuéxiào.",  se:"We go to school.",  tk:["我们","去","学校"]},
+  {w:"你们", py:"nǐmen", en:"you (all)",   e:"👉👉👉", hom:"nimen",
+   s:"你们好吗？",   sp:"Nǐmen hǎo ma?",      se:"How are you all?",  tk:["你们","好","吗"]},
+  {w:"他们", py:"tāmen", en:"they / them", e:"👦👧👦", hom:"tamen",
+   s:"他们在家。",   sp:"Tāmen zài jiā.",     se:"They are at home.", tk:["他们","在","家"]},
+  {w:"这",   py:"zhè",   en:"this",        e:"📍",     hom:"zhe",
+   s:"这是我的书。", sp:"Zhè shì wǒ de shū.", se:"This is my book.",  tk:["这","是","我的","书"]}
+];
+
+const LEVELS = [
+  {id:0,ic:"🖼️",tt:"1. Listen &amp; Match",       ss:"Hear the word, tap the right picture"},
+  {id:1,ic:"✍️",tt:"2. Listen &amp; Type Pinyin", ss:"Hear the word, type its pinyin (no tones needed)"},
+  {id:2,ic:"🀄",tt:"3. Find the Character",       ss:"See the picture, tap the right 汉字"},
+  {id:3,ic:"👂",tt:"4. Sentence &amp; Picture",   ss:"Hear a whole sentence, tap the picture"},
+  {id:4,ic:"🧩",tt:"5. Fill the Blank",           ss:"Tap the missing character in the sentence"},
+  {id:5,ic:"🔀",tt:"6. Build the Sentence",       ss:"Put the characters in the right order"},
+  {id:6,ic:"🗣️",tt:"7. Say It!",                 ss:"Repeat the word and the whole sentence"},
+  {id:7,ic:"⚡",tt:"8. Boss Quiz",                ss:"Mixed review of all 8 words"}
+];
+
+const TITLE = "CHINESE POWER";
+const SUBTITLE = "8 words • Listen • Read • Write • Speak";
+
+/* ============================================================
+   ==========  ENGINE — do not edit below this line  ==========
+   ============================================================ */
+
+const QN = WORDS.length;                 /* questions per level */
+const NL = LEVELS.length;                /* number of levels */
+const PER = QN*10;                       /* max points per level */
+const MAXSC = PER*NL;
+
+const S = {level:null, i:0, first:true, revealed:false, wrong:0,
+           score:0, stageScore:0,
+           done:new Array(NL).fill(false),
+           stageScores:new Array(NL).fill(0),
+           lastAudio:null, order:[], expect:null, fc:0};
+
+const $ = s=>document.querySelector(s);
+const screen = $("#screen");
+const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
+
+/* pinyin comparison: tone marks and spaces are ignored, so "wǒ men",
+   "wo men" and "women" are all accepted. */
+const normPy = t => (t||"").toLowerCase().normalize("NFD")
+                     .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z]/g,"");
+/* Chinese comparison: strip spaces and punctuation, keep the characters. */
+const normZh = t => (t||"").replace(/[\s，。？！、,.?!]/g,"");
+
+/* ---------- sound ---------- */
+let AC=null;
+function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}} if(AC&&AC.state==="suspended")AC.resume(); return AC; }
+function beep(freq,dur,type,vol){
+  const c=ac(); if(!c)return;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type=type||"sine"; o.frequency.value=freq;
+  g.gain.setValueAtTime(vol||.16,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dur);
+  o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+dur);
+}
+const sTap  =()=>beep(620,.07,"triangle",.09);
+function sGood(){ [660,880,1174].forEach((f,i)=>setTimeout(()=>beep(f,.18,"triangle",.14),i*85)); }
+function sBad(){ beep(220,.22,"sawtooth",.1); setTimeout(()=>beep(160,.28,"sawtooth",.1),120); }
+function sWin(){ [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.32,"triangle",.16),i*130)); }
+
+/* ---------- speech (Mandarin) ---------- */
+let ZH=null, EN=null, zhChecked=false;
+function pickVoice(){
+  if(!("speechSynthesis" in window)) return;
+  let vs=[]; try{ vs=speechSynthesis.getVoices()||[]; }catch(e){ vs=[]; }
+  ZH = vs.find(v=>/^zh[-_]CN/i.test(v.lang))
+    || vs.find(v=>/^zh[-_]/i.test(v.lang))
+    || vs.find(v=>/chinese|mandarin|putonghua|tingting|yaoyao|huihui|liliang|xiaoxiao/i.test(v.name))
+    || null;
+  EN = vs.find(v=>/^en[-_]/i.test(v.lang)) || null;
+  if(vs.length) zhChecked=true;
+}
+if("speechSynthesis" in window){ pickVoice(); try{ speechSynthesis.onvoiceschanged=pickVoice; }catch(e){} }
+function hasZh(){ return !!ZH; }
+function stopSpeak(){ try{ if("speechSynthesis" in window) speechSynthesis.cancel(); }catch(e){} }
+/* speak(): fires cb from whichever comes first — onend, onerror, or a timer.
+   Without the timer a phone with no installed voice strands the student on
+   the speaking level forever. Keep all three paths. */
+function speak(text,rate,cb,lang){
+  const L = lang||"zh-CN";
+  S.lastAudio={text:text,rate:rate||.9,lang:L};
+  let fired=false;
+  const fire=()=>{ if(fired)return; fired=true; if(cb)cb(); };
+  if(!("speechSynthesis" in window)){ toast("Audio is not available on this device"); setTimeout(fire,700); return; }
+  stopSpeak();
+  let u;
+  try{ u=new SpeechSynthesisUtterance(text); }catch(e){ setTimeout(fire,500); return; }
+  u.lang=L; u.rate=rate||.85; u.pitch=1.05;
+  const v = /^zh/i.test(L) ? ZH : (EN||ZH);
+  if(v) u.voice=v;
+  u.onend=fire; u.onerror=fire;
+  const units = /^zh/i.test(L) ? Math.max(1,text.replace(/[^\u4e00-\u9fff]/g,"").length)
+                               : text.split(/\s+/).length;
+  setTimeout(fire, Math.min(7000, Math.max(1500, (units*520)/(rate||.85)) + 900));
+  setTimeout(()=>{ try{ speechSynthesis.speak(u); }catch(e){ fire(); } },60);
+}
+const sayZh = (t,r,cb)=>speak(t,r||.75,cb,"zh-CN");
+const sayEn = (t,r,cb)=>speak(t,r||.9,cb,"en-US");
+function replay(){ if(S.lastAudio)speak(S.lastAudio.text,S.lastAudio.rate,null,S.lastAudio.lang); }
+
+/* ---------- fx ---------- */
+function toast(msg){
+  const t=$("#toast"); t.innerHTML=msg; t.classList.add("on");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("on"),2400);
+}
+function confetti(n){
+  const box=$("#confetti"), cols=["#ffe066","#ffb400","#ff5d73","#9b6bff","#4d8bff","#22c58b"];
+  for(let i=0;i<(n||60);i++){
+    const d=document.createElement("div"); d.className="cf";
+    d.style.left=Math.random()*100+"vw"; d.style.top="-20px";
+    d.style.background=cols[i%cols.length];
+    d.style.animationDuration=(1.6+Math.random()*1.6)+"s";
+    d.style.animationDelay=(Math.random()*.5)+"s";
+    box.appendChild(d); setTimeout(()=>d.remove(),4200);
+  }
+}
+function setScore(){ $("#scoreVal").textContent=S.score; }
+function award(){
+  const p = S.revealed ? 2 : (S.first ? 10 : 5);
+  S.score+=p; S.stageScore+=p; setScore(); return p;
+}
+
+/* pool of distractors that do NOT sound the same as the answer */
+function otherWords(idx,n,audio){
+  const pool=WORDS.filter((x,i)=> i!==idx && (!audio || x.hom!==WORDS[idx].hom));
+  return shuffle(pool).slice(0,n||3);
+}
+
+/* ============================================================
+   MENU
+   ============================================================ */
+function goHome(){
+  stopSpeak(); S.level=null; S.lastAudio=null; S.expect=null;
+  $("#pillTitle").textContent="Chinese Power";
+  $("#repeatBtn").classList.add("hide");
+  const allDone=S.done.every(Boolean);
+  screen.innerHTML=
+   '<div class="hero"><h1>'+TITLE+'</h1><p>'+SUBTITLE+'</p>'+
+   '<div class="wordstrip">'+WORDS.map((w,i)=>
+      '<button class="wchip" data-w="'+i+'"><b class="han">'+w.w+'</b><span class="py">'+w.py+'</span></button>').join("")+'</div>'+
+   '<p style="font-size:12px;opacity:.6;margin-top:8px">Tap a word to hear it • tap the screen once to turn the sound on</p></div>'+
+   '<div class="grid">'+
+     '<button class="lvl study" id="fcBtn"><span class="ic">📇</span><span class="tx">'+
+     '<span class="tt">Flash Cards (study first)</span>'+
+     '<span class="ss">Character + pinyin on the front, picture + meaning + example on the back</span>'+
+     '</span><span class="st">▶️</span></button>'+
+     LEVELS.map(l=>
+     '<button class="lvl'+(S.done[l.id]?' done':'')+'" data-l="'+l.id+'">'+
+     '<span class="ic">'+l.ic+'</span><span class="tx"><span class="tt">'+l.tt+'</span>'+
+     '<span class="ss">'+l.ss+'</span></span><span class="st">'+(S.done[l.id]?'✅':'▶️')+'</span></button>').join("")+
+   '</div>'+
+   (allDone?'<button class="cta g" id="finalBtn" style="margin-top:16px">🏆 See My Final Result</button>':
+            '<div style="text-align:center;color:#fff;opacity:.65;font-size:13px;margin-top:16px">'+
+            S.done.filter(Boolean).length+' / '+NL+' games finished</div>')+
+   (zhChecked && !hasZh()
+     ? '<div class="notice">🔈 <b>No Chinese voice found on this device.</b> The game still works, '+
+       'but to hear the words install a Chinese voice: <b>Android</b> Settings → Languages → '+
+       'Text-to-speech → install 中文 (简体). <b>iPhone</b> Settings → Accessibility → Spoken Content → '+
+       'Voices → Chinese. <b>Windows</b> Settings → Time &amp; language → Speech → Add voices → 中文(中国).</div>'
+     : '');
+
+  screen.querySelectorAll(".wchip").forEach(b=>b.onclick=()=>{ac();sTap();sayZh(WORDS[+b.dataset.w].w,.7);});
+  screen.querySelectorAll(".lvl[data-l]").forEach(b=>b.onclick=()=>{ac();sTap();startLevel(+b.dataset.l);});
+  $("#fcBtn").onclick=()=>{ac();sTap();flashCard(S.fc);};
+  if($("#finalBtn"))$("#finalBtn").onclick=()=>{sTap();finalScreen();};
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   FLASH CARDS  (study mode — not scored)
+   ============================================================ */
+function flashCard(n){
+  stopSpeak();
+  S.fc=(n+QN)%QN; S.level=null;
+  const w=WORDS[S.fc];
+  $("#pillTitle").textContent="Flash Cards "+(S.fc+1)+" / "+QN;
+  $("#repeatBtn").classList.remove("hide");
+  S.lastAudio={text:w.w,rate:.7,lang:"zh-CN"};
+  screen.innerHTML=
+   '<div class="fcwrap" id="fcw"><div class="fcin">'+
+     '<div class="fcf">'+
+       '<div class="side">CHINESE</div>'+
+       '<div class="bighan han">'+w.w+'</div>'+
+       '<div class="bigpy py">'+w.py+'</div>'+
+       '<div class="playrow" style="margin-bottom:0"><button class="pbtn" id="f1">🔊 Play</button>'+
+       '<button class="pbtn slow" id="f2">🐢 Slow</button></div>'+
+       '<div class="fctap">👆 Tap the card to turn it over</div>'+
+     '</div>'+
+     '<div class="fcb">'+
+       '<div class="side">MEANING</div>'+
+       '<div class="bigemo">'+w.e+'</div>'+
+       '<div class="fcen">'+w.en+'</div>'+
+       '<div class="fcsent"><div class="zh han">'+w.s+'</div>'+
+       '<div class="pn py">'+w.sp+'</div><div class="en">'+w.se+'</div></div>'+
+       '<div class="playrow" style="margin:12px 0 0"><button class="pbtn slow" id="f3">🔊 Sentence</button>'+
+       '<button class="pbtn slow" id="f4">🐢 Slow</button></div>'+
+       '<div class="fctap">👆 Tap the card to turn it back</div>'+
+     '</div>'+
+   '</div></div>'+
+   '<div class="fcnav"><button class="cta ghost" id="prev">◀ Back</button>'+
+   '<button class="cta ghost" id="next">Next ▶</button></div>'+
+   '<button class="cta g" id="play">▶ I am ready — play the games</button>';
+
+  const wrap=$("#fcw");
+  wrap.onclick=e=>{ if(e.target.closest("button"))return; ac(); sTap(); wrap.classList.toggle("flip");
+    if(wrap.classList.contains("flip")) sayZh(w.s,.7); else sayZh(w.w,.7); };
+  $("#f1").onclick=e=>{e.stopPropagation();ac();sayZh(w.w,.75);};
+  $("#f2").onclick=e=>{e.stopPropagation();ac();sayZh(w.w,.5);};
+  $("#f3").onclick=e=>{e.stopPropagation();ac();sayZh(w.s,.7);};
+  $("#f4").onclick=e=>{e.stopPropagation();ac();sayZh(w.s,.45);};
+  $("#prev").onclick=()=>{ac();sTap();flashCard(S.fc-1);};
+  $("#next").onclick=()=>{ac();sTap();flashCard(S.fc+1);};
+  $("#play").onclick=()=>{ac();sTap();startLevel(0);};
+  setTimeout(()=>sayZh(w.w,.75),300);
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   LEVEL ENGINE
+   ============================================================ */
+function startLevel(n){
+  /* replaying a finished level must not stack a second score on the total,
+     or the final percentage goes over 100 */
+  if(S.done[n]){ S.score-=S.stageScores[n]; S.stageScores[n]=0; setScore(); }
+  S.level=n; S.i=0; S.first=true; S.revealed=false; S.wrong=0; S.stageScore=0;
+  $("#pillTitle").textContent="Level "+(n+1);
+  $("#repeatBtn").classList.remove("hide");
+  S.order = shuffle([...Array(QN).keys()]);
+  renderQ();
+}
+function head(sub){
+  const pct=(S.i/QN)*100;
+  return '<div class="qhead"><span class="qnum">QUESTION '+(S.i+1)+' / '+QN+'</span>'+
+         '<span class="qnum">⭐ '+S.stageScore+'</span></div>'+
+         '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+         (sub?'<div class="sub">'+sub+'</div>':'');
+}
+function next(){
+  /* a child can tap 🏠 in the moment between a correct answer and the
+     advance timer. Without this guard next() runs with no level selected. */
+  if(S.level===null) return;
+  S.i++; S.first=true; S.revealed=false; S.wrong=0;
+  if(S.i>=QN){ stageDone(); } else { renderQ(); }
+}
+function renderQ(){
+  if(S.level===null) return;
+  window.scrollTo(0,0);
+  const fns=[q1,q2,q3,q4,q5,q6,q7,q8];
+  const f=fns[S.level]; if(typeof f==="function") f();
+}
+function fbWrong(el,msg){
+  sBad(); if(el){el.classList.add("wrong"); setTimeout(()=>el.classList.remove("wrong"),450);}
+  S.first=false; S.wrong++;
+  const f=$("#fb"); if(f){f.className="fb no"; f.innerHTML=msg||"❌ Not quite — try again!";}
+}
+function fbRight(el,msg){
+  sGood(); confetti(18); if(el)el.classList.add("right");
+  const p=award();
+  const f=$("#fb"); if(f){f.className="fb ok"; f.innerHTML=(msg||"✅ Excellent!")+" +"+p+" points";}
+}
+/* build a grid of tappable options. vals: [{txt, ans, han}] */
+function optGrid(vals,cls){
+  return '<div class="opts'+(cls?' '+cls:'')+'" id="opts">'+vals.map((o,i)=>
+    '<button class="opt'+(o.han?' han':'')+'" data-i="'+i+'" data-ans="'+o.ans+'">'+o.txt+'</button>').join("")+'</div>';
+}
+
+/* ---------- LEVEL 1: hear the word -> tap the picture ---------- */
+function q1(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  const opts=shuffle([word,...otherWords(idx,3,true)]);
+  S.expect=word.e;
+  screen.innerHTML='<div class="card">'+head("Listen to the word and tap the correct picture")+
+    '<div class="playrow"><button class="pbtn big" id="p1">🔊 Play</button>'+
+    '<button class="pbtn slow" id="p1s">🐢 Slow</button></div>'+
+    optGrid(opts.map(o=>({txt:o.e,ans:o.e})))+
+    '<div id="fb"></div></div>';
+  $("#p1").onclick=()=>{ac();sayZh(word.w,.75);}; $("#p1s").onclick=()=>{ac();sayZh(word.w,.45);};
+  setTimeout(()=>sayZh(word.w,.75),350);
+  screen.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    ac(); const o=opts[+b.dataset.i];
+    if(o.w===word.w){
+      screen.querySelectorAll(".opt").forEach(x=>x.onclick=null);
+      fbRight(b,"✅ Yes! <b class='han'>"+word.w+"</b> = "+word.py+" = "+word.en);
+      setTimeout(next,1600);
+    } else fbWrong(b,"❌ That picture is <b class='han'>"+o.w+"</b> ("+o.py+"). Listen again!");
+  });
+}
+
+/* ---------- LEVEL 2: hear the word -> type the pinyin (3 strikes -> reveal) ---------- */
+function q2(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  S.expect=word.py;
+  screen.innerHTML='<div class="card">'+head("Listen and type the pinyin — tone marks are not needed")+
+    '<div class="playrow"><button class="pbtn big" id="p1">🔊 Play</button>'+
+    '<button class="pbtn slow" id="p1s">🐢 Slow</button></div>'+
+    '<div class="bigemo">'+word.e+'</div>'+
+    '<input class="inp py" id="ans" placeholder="type the pinyin..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">'+
+    '<button class="cta" id="ck">Check ✔</button><div id="fb"></div></div>';
+  $("#p1").onclick=()=>{ac();sayZh(word.w,.75);}; $("#p1s").onclick=()=>{ac();sayZh(word.w,.4);};
+  setTimeout(()=>sayZh(word.w,.75),350);
+  const inp=$("#ans");
+  const check=()=>{
+    ac();
+    if(normPy(inp.value)===normPy(word.py)){
+      inp.classList.add("right"); inp.disabled=true;
+      fbRight(inp,"✅ Perfect! <b class='han'>"+word.w+"</b> = <b>"+word.py+"</b> = "+word.en);
+      setTimeout(next,1700);
+    } else {
+      fbWrong(inp,"❌ Not correct. Listen again and try once more.");
+      inp.value="";
+      if(S.wrong>=3 && !S.revealed){
+        S.revealed=true;
+        $("#fb").className="fb tip";
+        $("#fb").innerHTML="💡 The pinyin is:<span class='copy py'>"+word.py+"</span>"+
+          "<span class='ans'>Now type it here to go on.</span>";
+        sayZh(word.w,.4);
+      }
+      inp.focus();
+    }
+  };
+  $("#ck").onclick=check;
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter")check(); });
+}
+
+/* ---------- LEVEL 3: picture + meaning -> tap the character ---------- */
+function q3(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  const opts=shuffle([word,...otherWords(idx,3,false)]);
+  S.expect=word.w;
+  screen.innerHTML='<div class="card">'+head("Which Chinese word means this?")+
+    '<div class="bigemo">'+word.e+'</div>'+
+    '<div class="prompt">'+word.en+'</div>'+
+    optGrid(opts.map(o=>({txt:o.w,ans:o.w,han:true})))+
+    '<div id="fb"></div></div>';
+  screen.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    ac(); const o=opts[+b.dataset.i];
+    if(o.w===word.w){
+      screen.querySelectorAll(".opt").forEach(x=>x.onclick=null);
+      sayZh(word.w,.7);
+      fbRight(b,"✅ Correct! <b>"+word.py+"</b>");
+      setTimeout(next,1600);
+    } else fbWrong(b,"❌ <b class='han'>"+o.w+"</b> means “"+o.en+"”. Try again!");
+  });
+}
+
+/* ---------- LEVEL 4: hear a sentence -> tap the picture ---------- */
+function q4(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  /* audio question: 他 and 她 are both "tā", so never offer them together */
+  const opts=shuffle([word,...otherWords(idx,3,true)]);
+  S.expect=word.e;
+  screen.innerHTML='<div class="card">'+head("Listen to the sentence. Which word do you hear?")+
+    '<div class="playrow"><button class="pbtn big" id="p1">🔊 Play</button>'+
+    '<button class="pbtn slow" id="p1s">🐢 Slow</button></div>'+
+    optGrid(opts.map(o=>({txt:o.e,ans:o.e})))+
+    '<div id="fb"></div></div>';
+  $("#p1").onclick=()=>{ac();sayZh(word.s,.7);}; $("#p1s").onclick=()=>{ac();sayZh(word.s,.45);};
+  setTimeout(()=>sayZh(word.s,.7),350);
+  screen.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    ac(); const o=opts[+b.dataset.i];
+    if(o.w===word.w){
+      screen.querySelectorAll(".opt").forEach(x=>x.onclick=null);
+      fbRight(b,"✅ Right! <span class='ans han'>"+word.s+"</span><span class='ans py' style='font-size:14px'>"+
+        word.sp+"<br>"+word.se+"</span>");
+      setTimeout(next,2600);
+    } else fbWrong(b,"❌ Listen again carefully!");
+  });
+}
+
+/* ---------- LEVEL 5: fill the missing character ---------- */
+function q5(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  const blanked=word.s.replace(word.w,"____");
+  /* the sentence is spoken, so homophones must stay out of the options */
+  const opts=shuffle([word,...otherWords(idx,3,true)]);
+  S.expect=word.w;
+  screen.innerHTML='<div class="card">'+head("Listen, then tap the missing word")+
+    '<div class="playrow"><button class="pbtn big" id="p1">🔊 Play sentence</button>'+
+    '<button class="pbtn slow" id="p1s">🐢 Slow</button></div>'+
+    '<div class="prompt han" style="font-size:30px">'+blanked.replace("____",'<span style="color:#ff5d73">____</span>')+'</div>'+
+    '<div class="sub">'+word.se+'</div>'+
+    optGrid(opts.map(o=>({txt:o.w,ans:o.w,han:true})))+
+    '<div id="fb"></div></div>';
+  $("#p1").onclick=()=>{ac();sayZh(word.s,.7);}; $("#p1s").onclick=()=>{ac();sayZh(word.s,.45);};
+  setTimeout(()=>sayZh(word.s,.7),350);
+  screen.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    ac(); const o=opts[+b.dataset.i];
+    if(o.w===word.w){
+      screen.querySelectorAll(".opt").forEach(x=>x.onclick=null);
+      sayZh(word.s,.7);
+      fbRight(b,"✅ Great! <span class='ans han'>"+word.s+"</span><span class='ans py' style='font-size:14px'>"+word.sp+"</span>");
+      setTimeout(next,2600);
+    } else fbWrong(b,"❌ Not that one. Listen once more!");
+  });
+}
+
+/* ---------- LEVEL 6: build the sentence ---------- */
+function q6(){
+  const idx=S.order[S.i], word=WORDS[idx], toks=word.tk;
+  let bank=shuffle(toks.map((t,i)=>({w:t,id:i}))), line=[];
+  S.expect=toks.join("");
+  screen.innerHTML='<div class="card">'+head("Tap the words to build the sentence")+
+    '<div class="sub" style="margin-top:-4px">'+word.se+'</div>'+
+    '<div class="line" id="line"></div><div class="bank" id="bank"></div>'+
+    '<div class="playrow" style="margin-top:14px"><button class="pbtn slow" id="p1">🔊 Hear the sentence</button></div>'+
+    '<button class="cta" id="ck">Check ✔</button>'+
+    '<button class="cta ghost" id="cl">↺ Clear</button><div id="fb"></div></div>';
+  S.lastAudio={text:word.s,rate:.7,lang:"zh-CN"};
+  function draw(){
+    $("#line").innerHTML=line.map((t,i)=>'<button class="tok in han" data-l="'+i+'">'+t.w+'</button>').join("");
+    $("#bank").innerHTML=bank.map((t,i)=>'<button class="tok han" data-b="'+i+'" data-tok="'+t.w+'">'+t.w+'</button>').join("");
+    $("#line").querySelectorAll(".tok").forEach(b=>b.onclick=()=>{ac();sTap();bank.push(line.splice(+b.dataset.l,1)[0]);draw();});
+    $("#bank").querySelectorAll(".tok").forEach(b=>b.onclick=()=>{ac();sTap();line.push(bank.splice(+b.dataset.b,1)[0]);draw();});
+  }
+  draw();
+  $("#p1").onclick=()=>{ac();sayZh(word.s,.65);};
+  $("#cl").onclick=()=>{ac();sTap();bank=shuffle(bank.concat(line));line=[];draw();};
+  $("#ck").onclick=()=>{
+    ac();
+    if(line.length!==toks.length){ fbWrong(null,"❌ Use <b>all</b> the words first!"); return; }
+    if(line.map(t=>t.w).join("")===toks.join("")){
+      $("#ck").disabled=true;
+      sayZh(word.s,.7);
+      fbRight(null,"✅ Perfect sentence! <span class='ans py' style='font-size:14px'>"+word.sp+"</span>");
+      setTimeout(next,2600);
+    } else fbWrong(null,"❌ Wrong order. Listen and try again!");
+  };
+}
+
+/* ---------- LEVEL 7: say it out loud (self-assessed) ---------- */
+function q7(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  S.expect=word.w;
+  screen.innerHTML='<div class="card">'+head("Listen, then say it out loud")+
+    '<div class="bigemo">'+word.e+'</div>'+
+    '<div class="bighan han" style="font-size:58px">'+word.w+'</div>'+
+    '<div class="bigpy py">'+word.py+' — '+word.en+'</div>'+
+    '<div class="playrow"><button class="pbtn" id="p1">🔊 Hear the word</button>'+
+    '<button class="pbtn slow" id="p1s">🐢 Slow</button></div>'+
+    '<div id="stage1"><div style="text-align:center;color:#7a7280;font-size:14px;margin:14px 0">'+
+    '🗣️ Say the word 3 times, then listen to the whole sentence.</div>'+
+    '<button class="cta g" id="model">👂 Listen to the sentence</button></div>'+
+    '<div id="stage2" class="hide"></div><div id="fb"></div></div>';
+  $("#p1").onclick=()=>{ac();sayZh(word.w,.75);}; $("#p1s").onclick=()=>{ac();sayZh(word.w,.45);};
+  setTimeout(()=>sayZh(word.w,.75),350);
+  $("#model").onclick=()=>{
+    ac(); const b=$("#model"); b.classList.add("speaking"); b.textContent="🔊 Listening...";
+    sayZh(word.s,.65,()=>{
+      /* the student may have pressed home while the sentence was playing */
+      if(!document.body.contains(b) || !$("#stage2")) return;
+      b.classList.remove("speaking");
+      $("#stage1").classList.add("hide");
+      $("#stage2").classList.remove("hide");
+      $("#stage2").innerHTML='<div class="model"><small>SAY THIS SENTENCE</small>'+
+        '<div class="zh han">'+word.s+'</div><div class="pn py">'+word.sp+'</div>'+
+        '<div class="en">'+word.se+'</div></div>'+
+        '<div class="playrow" style="margin-top:12px"><button class="pbtn slow" id="rep">🔁 Repeat it</button>'+
+        '<button class="pbtn slow" id="rep2">🐢 Very slow</button></div>'+
+        '<div style="text-align:center;font-size:14px;color:#7a7280;margin:6px 0 4px">Did you say it well?</div>'+
+        '<div class="row2"><button class="cta g" id="yes">✅ Yes</button>'+
+        '<button class="cta r" id="no">❌ Try again</button></div>';
+      $("#rep").onclick=()=>{ac();sayZh(word.s,.65);};
+      $("#rep2").onclick=()=>{ac();sayZh(word.s,.4);};
+      $("#yes").onclick=()=>{ac();fbRight(null,"✅ Well done!");setTimeout(next,1400);};
+      $("#no").onclick=()=>{ac();fbWrong(null,"🔁 No problem — say it once more!");
+        setTimeout(()=>{ if(!$("#stage2"))return;
+          $("#stage2").classList.add("hide"); $("#stage1").classList.remove("hide");
+          const m=$("#model"); if(m)m.textContent="👂 Listen to the sentence"; sayZh(word.w,.75); },1000);};
+    });
+  };
+}
+
+/* ---------- LEVEL 8: boss quiz (mixed review) ---------- */
+function q8(){
+  const idx=S.order[S.i], word=WORDS[idx];
+  const kind=S.i%3;   /* 0 sound->picture, 1 character->meaning, 2 picture->pinyin */
+  let html, opts, sub, audio=null;
+
+  if(kind===0){
+    opts=shuffle([word,...otherWords(idx,3,true)]);
+    S.expect=word.e; audio=word.w;
+    sub="⚡ Listen — which picture is it?";
+    html='<div class="playrow"><button class="pbtn big" id="p1">🔊 Play</button>'+
+         '<button class="pbtn slow" id="p1s">🐢 Slow</button></div>'+
+         optGrid(opts.map(o=>({txt:o.e,ans:o.e})));
+  } else if(kind===1){
+    opts=shuffle([word,...otherWords(idx,3,false)]);
+    S.expect=word.en; audio=word.w;
+    sub="⚡ What does this word mean?";
+    html='<div class="bighan han">'+word.w+'</div>'+
+         '<div class="playrow"><button class="pbtn slow" id="p1">🔊 Hear it</button></div>'+
+         optGrid(opts.map(o=>({txt:o.en,ans:o.en})),"text");
+  } else {
+    /* two homophones would produce two identical pinyin options */
+    opts=shuffle([word,...otherWords(idx,3,true)]);
+    S.expect=word.py; audio=word.w;
+    sub="⚡ Which pinyin goes with this picture?";
+    html='<div class="bigemo">'+word.e+'</div>'+
+         '<div class="prompt">'+word.en+'</div>'+
+         optGrid(opts.map(o=>({txt:o.py,ans:o.py})),"text");
+  }
+
+  screen.innerHTML='<div class="card">'+head(sub)+html+'<div id="fb"></div></div>';
+  if(audio){
+    S.lastAudio={text:audio,rate:.75,lang:"zh-CN"};
+    if($("#p1")) $("#p1").onclick=()=>{ac();sayZh(audio,.75);};
+    if($("#p1s")) $("#p1s").onclick=()=>{ac();sayZh(audio,.45);};
+    if(kind===0) setTimeout(()=>sayZh(audio,.75),350);
+  }
+  screen.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    ac(); const o=opts[+b.dataset.i];
+    if(o.w===word.w){
+      screen.querySelectorAll(".opt").forEach(x=>x.onclick=null);
+      sayZh(word.w,.7);
+      fbRight(b,"✅ <b class='han'>"+word.w+"</b> = "+word.py+" = "+word.en);
+      setTimeout(next,1700);
+    } else fbWrong(b,"❌ Not that one — try again!");
+  });
+}
+
+/* ============================================================
+   STAGE DONE / FINAL
+   ============================================================ */
+function stageDone(){
+  S.done[S.level]=true; S.stageScores[S.level]=S.stageScore;
+  sWin(); confetti(90);
+  const pct=Math.round(S.stageScore/PER*100);
+  const stars = pct>=90?"⭐⭐⭐" : pct>=70?"⭐⭐" : "⭐";
+  const allDone=S.done.every(Boolean);
+  const emj = pct>=90?"🏆":pct>=70?"🎉":"👍";
+  $("#repeatBtn").classList.add("hide");
+  screen.innerHTML='<div class="result"><div class="em">'+emj+'</div>'+
+    '<h2>Level '+(S.level+1)+' complete!</h2>'+
+    '<div class="stars">'+stars+'</div>'+
+    '<div class="bigscore">'+S.stageScore+' / '+PER+'</div>'+
+    '<p>Total score: '+S.score+'</p>'+
+    '<div style="margin-top:18px">'+
+    (allDone?'<button class="cta g" id="fin">🏆 See my final result</button>':
+             '<button class="cta" id="nx">▶ Next level</button>')+
+    '<button class="cta ghost" id="hm">🏠 Back to menu</button>'+
+    '<button class="cta ghost" id="rt">🔁 Play this level again</button></div></div>';
+  $("#hm").onclick=()=>{sTap();goHome();};
+  $("#rt").onclick=()=>{sTap();S.score-=S.stageScore;setScore();startLevel(S.level);};
+  if($("#nx"))$("#nx").onclick=()=>{ sTap();
+    let n=S.done.findIndex(d=>!d); if(n<0)n=(S.level+1)%NL; startLevel(n); };
+  if($("#fin"))$("#fin").onclick=()=>{sTap();finalScreen();};
+  window.scrollTo(0,0);
+}
+
+function finalScreen(){
+  sWin(); confetti(200);
+  setTimeout(()=>confetti(150),900); setTimeout(()=>confetti(150),1800);
+  const total=S.score, pct=Math.round(total/MAXSC*100);
+  const stars = pct>=90?"⭐⭐⭐⭐⭐" : pct>=80?"⭐⭐⭐⭐" : pct>=65?"⭐⭐⭐" : pct>=50?"⭐⭐" : "⭐";
+  const title = pct>=90?"中文高手 — CHINESE MASTER!" : pct>=75?"EXCELLENT WORK!" : pct>=60?"GREAT JOB!" : "GOOD EFFORT!";
+  $("#repeatBtn").classList.add("hide");
+  screen.innerHTML='<div class="result"><div class="em">🏆</div>'+
+    '<h2>'+title+'</h2><p>You finished all '+NL+' levels</p>'+
+    '<div class="stars">'+stars+'</div>'+
+    '<div class="bigscore">'+total+'<span style="font-size:22px;opacity:.7"> / '+MAXSC+'</span></div>'+
+    '<p>'+pct+'% — you have learned '+QN+' new Chinese words!</p>'+
+    '<div class="brk">'+LEVELS.map(l=>'<div><span>'+l.tt.replace(/&amp;/g,"&")+'</span><span>'+S.stageScores[l.id]+'/'+PER+'</span></div>').join("")+'</div>'+
+    '<button class="cta g" id="again">🔄 Play everything again</button>'+
+    '<button class="cta ghost" id="hm">🏠 Back to menu</button></div>';
+  $("#hm").onclick=()=>{sTap();goHome();};
+  $("#again").onclick=()=>{ sTap(); S.score=0;
+    S.stageScores=new Array(NL).fill(0); S.done=new Array(NL).fill(false);
+    setScore(); goHome(); };
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+$("#homeBtn").onclick=()=>{ ac(); sTap(); stopSpeak(); goHome(); };
+$("#repeatBtn").onclick=()=>{ ac(); replay(); };
+document.addEventListener("click",()=>ac(),{once:true});
+document.addEventListener("touchstart",()=>ac(),{once:true});
+window.addEventListener("beforeunload",stopSpeak);
+goHome();
+/* voices arrive late in Chrome — redraw the menu once so the
+   "no Chinese voice" notice is accurate. */
+setTimeout(()=>{ pickVoice(); if(S.level===null && $("#fcBtn")) goHome(); }, 1200);
+</script>
+</body>
+</html>
